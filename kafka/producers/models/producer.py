@@ -16,6 +16,12 @@ class Producer:
     # Tracks existing topics across all Producer instances
     existing_topics = set([])
 
+    BROKER_URL = "PLAINTEXT://localhost:9092,PLAINTEXT://localhost:9093,PLAINTEXT://localhost:9094"
+    SCHEMA_REGISTRY_URL = "http://localhost:8081"
+
+    # Add schema registry???
+    client = AdminClient({"bootstrap.servers": BROKER_URL})
+
     def __init__(
         self,
         topic_name,
@@ -36,11 +42,10 @@ class Producer:
         # TODO: Configure the broker properties below. Make sure to reference the project README
         # and use the Host URL for Kafka and Schema Registry!
         #
-        #
+        # SCOTT: this is probably unused ???
         self.broker_properties = {
-            # TODO
-            # TODO
-            # TODO
+            "bootstrap.servers": self.BROKER_URL,
+            "schema.registry.url": self.SCHEMA_REGISTRY_URL
         }
 
         # If the topic does not already exist, try to create it
@@ -49,8 +54,13 @@ class Producer:
             Producer.existing_topics.add(self.topic_name)
 
         # TODO: Configure the AvroProducer
-        # self.producer = AvroProducer(
-        # )
+        # With schema registry ???
+        self.producer = AvroProducer(
+            {"bootstrap.servers": self.BROKER_URL,
+            'schema.registry.url': self.SCHEMA_REGISTRY_URL},
+            default_key_schema=self.key_schema,
+            default_value_schema=self.value_schema
+        ) #???
 
     def create_topic(self):
         """Creates the producer topic if it does not already exist"""
@@ -60,7 +70,33 @@ class Producer:
         # the Kafka Broker.
         #
         #
-        logger.info("topic creation kafka integration incomplete - skipping")
+        clusterMetadata = self.client.list_topics(timeout=60)
+        if (clusterMetadata.topics.get(self.topic_name) is None):
+            logger.info(f"Creating topic {self.topic_name}")
+            """Creates the topic with the given topic name"""
+            futures = self.client.create_topics(
+                [
+                    NewTopic(
+                        topic=self.topic_name,
+                        num_partitions=1,#self.num_partitions,
+                        replication_factor=1, #self.num_replicas,
+                        config={
+                            "delete.retention.ms":100,
+                            "compression.type":"lz4",
+                            "file.delete.delay.ms":100
+                        }
+
+                    )
+                ]
+            )
+
+            for topic, future in futures.items():
+                try:
+                    future.result()
+                    logger.info("topic created")
+                except Exception as e:
+                    logger.error(f"failed to create topic {self.topic_name}: {e}")
+                    raise
 
     def time_millis(self):
         return int(round(time.time() * 1000))
@@ -72,7 +108,15 @@ class Producer:
         # TODO: Write cleanup code for the Producer here
         #
         #
-        logger.info("producer close incomplete - skipping")
+        future = self.client.delete_topics(list(self.topic_name), operation_timeout=30)
+
+        # Wait for operation to finish.
+        for topic, f in future.items():
+            try:
+                f.result()  # The result itself is None
+                logger.info("Topic {} deleted".format(topic))
+            except Exception as e:
+                logger.error("Failed to delete topic {}: {}".format(topic, e))
 
     def time_millis(self):
         """Use this function to get the key for Kafka Events"""
