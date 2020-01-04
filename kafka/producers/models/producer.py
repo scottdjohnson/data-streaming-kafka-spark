@@ -19,7 +19,6 @@ class Producer:
     BROKER_URL = "PLAINTEXT://localhost:9092,PLAINTEXT://localhost:9093,PLAINTEXT://localhost:9094"
     SCHEMA_REGISTRY_URL = "http://localhost:8081"
 
-    # Add schema registry???
     client = AdminClient({"bootstrap.servers": BROKER_URL})
 
     def __init__(
@@ -36,13 +35,6 @@ class Producer:
         self.value_schema = value_schema
         self.num_partitions = num_partitions
         self.num_replicas = num_replicas
-
-        #
-        #
-        # TODO: Configure the broker properties below. Make sure to reference the project README
-        # and use the Host URL for Kafka and Schema Registry!
-        #
-        # SCOTT: this is probably unused ???
         self.broker_properties = {
             "bootstrap.servers": self.BROKER_URL,
             "schema.registry.url": self.SCHEMA_REGISTRY_URL
@@ -53,23 +45,16 @@ class Producer:
             self.create_topic()
             Producer.existing_topics.add(self.topic_name)
 
-        # TODO: Configure the AvroProducer
-        # With schema registry ???
         self.producer = AvroProducer(
             {"bootstrap.servers": self.BROKER_URL,
             'schema.registry.url': self.SCHEMA_REGISTRY_URL},
             default_key_schema=self.key_schema,
             default_value_schema=self.value_schema
-        ) #???
+        )
 
     def create_topic(self):
         """Creates the producer topic if it does not already exist"""
-        #
-        #
-        # TODO: Write code that creates the topic for this producer if it does not already exist on
-        # the Kafka Broker.
-        #
-        #
+
         clusterMetadata = self.client.list_topics(timeout=60)
         if (clusterMetadata.topics.get(self.topic_name) is None):
             logger.info(f"Creating topic {self.topic_name}")
@@ -78,7 +63,7 @@ class Producer:
                 [
                     NewTopic(
                         topic=self.topic_name,
-                        num_partitions=1,#self.num_partitions,
+                        num_partitions=1, #self.num_partitions,
                         replication_factor=1, #self.num_replicas,
                         config={
                             "delete.retention.ms":100,
@@ -103,11 +88,7 @@ class Producer:
 
     def close(self):
         """Prepares the producer for exit by cleaning up the producer"""
-        #
-        #
-        # TODO: Write cleanup code for the Producer here
-        #
-        #
+
         future = self.client.delete_topics(list(self.topic_name), operation_timeout=30)
 
         # Wait for operation to finish.

@@ -35,9 +35,6 @@ out_topic = app.topic("org.chicago.cta.stations.table.v1", partitions=1)
 table = app.Table(
     "stations_total",
     default=int
-    #,
-    #partitions=1,
-    #changelog_topic=out_topic,
 )
 
 
@@ -57,15 +54,6 @@ async def stationevent(stationevents):
                                                                        order=station.order,
                                                                        line=color))
         pass
-
-#
-#
-# TODO: Using Faust, transform input `Station` records into `TransformedStation` records. Note that
-# "line" is the color of the station. So if the `Station` record has the field `red` set to true,
-# then you would set the `line` of the `TransformedStation` record to the string `"red"`
-#
-#
-
 
 if __name__ == "__main__":
     app.main()

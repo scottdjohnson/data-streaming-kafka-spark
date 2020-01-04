@@ -17,9 +17,4 @@ class Weather:
         """Handles incoming weather data"""
         self.temperature = json_data["temperature"]
         self.status = json_data["status"]
-        #logger.info("weather process_message is incomplete - skipping")
-        #
-        #
-        # TODO: Process incoming weather messages. Set the temperature and status.
-        #
-        #
+
