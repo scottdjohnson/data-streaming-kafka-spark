@@ -1,4 +1,5 @@
 ##Project questions
+
 **Question:** How did changing values on the SparkSession property parameters affect the throughput and latency of the data?
 
 
