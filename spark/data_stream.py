@@ -44,26 +44,11 @@ def run_spark_job(spark):
         .option("stopGracefullyOnShutdown", "true") \
         .load()
 
-
-    # Show schema for the incoming resources for checks
-    df.printSchema()
-
     kafka_df = df.selectExpr("CAST(value as string)") #\
-
-    kafka_df.printSchema()
-    """
-    kafka_df.writeStream \
-    .format("console") \
-    .trigger(processingTime="5 seconds") \
-    .option("checkpointLocation", "./checkpoint") \
-    .start() \
-    .awaitTermination()
-    """
 
     # TODO extract the correct column from the kafka input resources
     service_table = kafka_df.select(psf.from_json(psf.col('value'), schema).alias("DF"))\
         .select("DF.*")
-
 
     # TODO select original_crime_type_name and disposition
     distinct_table = service_table.select("original_crime_type_name", "disposition", "call_date_time")
