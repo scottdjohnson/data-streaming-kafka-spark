@@ -8,10 +8,6 @@ import pyspark.sql.functions as psf
 BOOTSTRAP_SERVER = "localhost:18101"
 TOPIC_NAME = "com.udacity.streaming.sfpd"
 
-# TODO Create a schema for incoming resources
-schema = StructType([
-])
-
 def run_spark_job(spark):
 
     schema = StructType() \
@@ -30,7 +26,6 @@ def run_spark_job(spark):
         .add("address_type", "string") \
         .add("common_location", "string")
 
-    # TODO Create Spark Configuration
     # Create Spark configurations with max offset of 200 per trigger
     # set up correct bootstrap server and port
     df = spark \
@@ -46,19 +41,15 @@ def run_spark_job(spark):
 
     kafka_df = df.selectExpr("CAST(value as string)") #\
 
-    # TODO extract the correct column from the kafka input resources
     service_table = kafka_df.select(psf.from_json(psf.col('value'), schema).alias("DF"))\
         .select("DF.*")
 
-    # TODO select original_crime_type_name and disposition
     distinct_table = service_table.select("original_crime_type_name", "disposition", "call_date_time")
 
     # count the number of original crime type
     agg_df = distinct_table.groupBy("original_crime_type_name", "disposition",
                                     psf.window(distinct_table.call_date_time, "1 hour")).count()
 
-    # TODO Q1. Submit a screen shot of a batch ingestion of the aggregation
-    # TODO write output stream
     #query = agg_df.writeStream \
     #    .format("console") \
     #    .trigger(processingTime="5 seconds") \
@@ -66,20 +57,13 @@ def run_spark_job(spark):
     #    .option("checkpointLocation", "./checkpoint") \
     #    .start()
 
-    # TODO attach a ProgressReporter
     #query.awaitTermination()
 
-    # TODO get the right radio code json path
     radio_code_json_filepath = "/Users/scott.johnson/code/sandbox/data-streaming-kafka-spark/spark/radio_code.json"
     radio_code_df = spark.read.option("multiline",True).json(radio_code_json_filepath)
-
-    # clean up your data so that the column names match on radio_code_df and agg_df
-    # we will want to join on the disposition code
-
-    # TODO rename disposition_code column to disposition
     radio_code_df = radio_code_df.withColumnRenamed("disposition_code", "disposition")
 
-    # TODO join on disposition column
+    # join on disposition column
     join_query = agg_df.join(radio_code_df, agg_df.disposition == radio_code_df.disposition)
 
     join_query.writeStream \
@@ -94,7 +78,6 @@ def run_spark_job(spark):
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
 
-    # TODO Create Spark in Standalone mode
     spark = SparkSession \
         .builder \
         .master("local[*]") \
